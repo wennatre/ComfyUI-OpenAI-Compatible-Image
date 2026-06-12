@@ -11,6 +11,8 @@ from PIL import Image
 
 MAX_REFERENCE_IMAGES = 8
 REFERENCE_LIST_TYPE = "OPENAI_COMPATIBLE_IMAGE_REFERENCES"
+DEFAULT_TIMEOUT_SECONDS = 600
+CONNECT_TIMEOUT_SECONDS = 30
 
 
 def _parse_json_object(value, field_name):
@@ -36,6 +38,63 @@ def _endpoint_url(api_base, endpoint_path):
     return f"{api_base}{endpoint_path}"
 
 
+def _request_timeout(timeout_seconds):
+    read_timeout = max(int(timeout_seconds), CONNECT_TIMEOUT_SECONDS)
+    return (CONNECT_TIMEOUT_SECONDS, read_timeout)
+
+
+def _format_timeout_message(operation, timeout_seconds):
+    return (
+        f"{operation} timed out after {timeout_seconds}s. "
+        "Image APIs and proxy endpoints can take several minutes, especially for reference-image edits. "
+        "Increase timeout_seconds, reduce n/reference image count, or check whether the provider requires async polling."
+    )
+
+
+def _post_json(url, headers, body, timeout_seconds, operation):
+    try:
+        return requests.post(
+            url,
+            headers=headers,
+            json=body,
+            timeout=_request_timeout(timeout_seconds),
+        )
+    except requests.exceptions.Timeout as exc:
+        raise TimeoutError(_format_timeout_message(operation, timeout_seconds)) from exc
+    except requests.exceptions.RequestException as exc:
+        raise RuntimeError(f"{operation} request failed before receiving a response: {exc}") from exc
+
+
+def _post_multipart(url, headers, data, files, timeout_seconds, operation):
+    try:
+        return requests.post(
+            url,
+            headers=headers,
+            data=data,
+            files=files,
+            timeout=_request_timeout(timeout_seconds),
+        )
+    except requests.exceptions.Timeout as exc:
+        raise TimeoutError(_format_timeout_message(operation, timeout_seconds)) from exc
+    except requests.exceptions.RequestException as exc:
+        raise RuntimeError(f"{operation} request failed before receiving a response: {exc}") from exc
+
+
+def _get_image_url(image_url, timeout_seconds):
+    try:
+        response = requests.get(
+            image_url,
+            headers={"Connection": "close"},
+            timeout=_request_timeout(timeout_seconds),
+        )
+        response.raise_for_status()
+        return response
+    except requests.exceptions.Timeout as exc:
+        raise TimeoutError(_format_timeout_message("Image URL download", timeout_seconds)) from exc
+    except requests.exceptions.RequestException as exc:
+        raise RuntimeError(f"Image URL download failed: {exc}") from exc
+
+
 def _b64_to_tensor(b64_image):
     image_bytes = base64.b64decode(b64_image)
     image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
@@ -43,7 +102,7 @@ def _b64_to_tensor(b64_image):
     return torch.from_numpy(array)
 
 
-def _response_to_tensor_batch(payload):
+def _response_to_tensor_batch(payload, timeout_seconds):
     items = payload.get("data")
     if not items:
         raise RuntimeError(f"Image API response has no data array: {payload}")
@@ -57,8 +116,7 @@ def _response_to_tensor_batch(payload):
 
         image_url = item.get("url")
         if image_url:
-            response = requests.get(image_url, timeout=120)
-            response.raise_for_status()
+            response = _get_image_url(image_url, timeout_seconds)
             image = Image.open(io.BytesIO(response.content)).convert("RGB")
             array = np.asarray(image).astype(np.float32) / 255.0
             images.append(torch.from_numpy(array))
@@ -186,7 +244,7 @@ class OpenAICompatibleImageGenerate:
                 ),
                 "timeout_seconds": (
                     "INT",
-                    {"default": 180, "min": 30, "max": 1200, "step": 10},
+                    {"default": DEFAULT_TIMEOUT_SECONDS, "min": 30, "max": 3600, "step": 30},
                 ),
             },
             "optional": {
@@ -233,6 +291,7 @@ class OpenAICompatibleImageGenerate:
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
+            "Connection": "close",
         }
         headers.update(_parse_json_object(extra_headers_json, "extra_headers_json"))
 
@@ -247,11 +306,11 @@ class OpenAICompatibleImageGenerate:
             body["quality"] = quality
         body.update(_parse_json_object(extra_body_json, "extra_body_json"))
 
-        response = requests.post(url, headers=headers, json=body, timeout=timeout_seconds)
+        response = _post_json(url, headers, body, timeout_seconds, "Image generation")
         if response.status_code >= 400:
             raise RuntimeError(f"Image API request failed ({response.status_code}): {response.text}")
 
-        return (_response_to_tensor_batch(response.json()),)
+        return (_response_to_tensor_batch(response.json(), timeout_seconds),)
 
 
 class OpenAICompatibleImageEditWithReferences:
@@ -307,7 +366,7 @@ class OpenAICompatibleImageEditWithReferences:
                 ),
                 "timeout_seconds": (
                     "INT",
-                    {"default": 180, "min": 30, "max": 1200, "step": 10},
+                    {"default": DEFAULT_TIMEOUT_SECONDS, "min": 30, "max": 3600, "step": 30},
                 ),
                 "append_reference_prompts": (
                     "BOOLEAN",
@@ -441,14 +500,15 @@ class OpenAICompatibleImageEditWithReferences:
 
         headers = {
             "Authorization": f"Bearer {api_key}",
+            "Connection": "close",
         }
         headers.update(_parse_json_object(extra_headers_json, "extra_headers_json"))
 
-        response = requests.post(url, headers=headers, data=data, files=files, timeout=timeout_seconds)
+        response = _post_multipart(url, headers, data, files, timeout_seconds, "Image edit")
         if response.status_code >= 400:
             raise RuntimeError(f"Image edit API request failed ({response.status_code}): {response.text}")
 
-        return (_response_to_tensor_batch(response.json()),)
+        return (_response_to_tensor_batch(response.json(), timeout_seconds),)
 
 
 class OpenAICompatibleReferenceImage:

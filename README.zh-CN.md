@@ -89,6 +89,8 @@ Authorization: Bearer {api_key}
 {"user": "comfyui"}
 ```
 
+`timeout_seconds` 默认是 `600`。带参考图的编辑请求在代理服务商上可能很慢；如果请求超时，先把这个值调大再重试。
+
 ## 参考图
 
 编辑节点默认请求：
@@ -189,6 +191,20 @@ docs/repo-layout.zh-CN.md
 ## 安全建议
 
 优先使用 `OPENAI_API_KEY` 环境变量，不建议把 key 写进 workflow。workflow 可能会被分享，节点 widget 值也可能保存在 workflow JSON 中。
+
+## 排查问题
+
+### 第二次生成一直超时
+
+有些 OpenAI-compatible 代理会错误地保持 HTTP 连接，导致第二次请求复用旧连接时卡住。节点现在默认发送 `Connection: close`，避免复用这种不稳定连接。
+
+如果仍然超时：
+
+- 把 `timeout_seconds` 调到 `900` 或 `1200`。
+- 把 `n` 降到 `1`。
+- 减少参考图数量或参考图分辨率。
+- 确认服务商是不是异步任务接口，而不是直接返回 `data[].b64_json` 或 `data[].url`。
+- 如果服务商需要自定义轮询接口，这个节点需要额外适配 provider-specific async polling。
 
 ## 开发校验
 

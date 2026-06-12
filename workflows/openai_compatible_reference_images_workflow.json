@@ -84,7 +84,7 @@
         "1024x1024",
         "auto",
         1,
-        180,
+        600,
         true,
         "Reference 1: use this as the primary subject.",
         "Reference 2: use this as the visual style and lighting direction.",

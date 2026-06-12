@@ -89,6 +89,8 @@ Use `extra_body_json` for provider body fields:
 {"user": "comfyui"}
 ```
 
+`timeout_seconds` defaults to `600`. Reference-image edits can be slow on proxy providers; if a request times out, increase this value before retrying.
+
 ## Reference Images
 
 The edit node defaults to:
@@ -188,6 +190,20 @@ It also accepts URL responses:
 ## Security
 
 Prefer `OPENAI_API_KEY` over pasting keys into workflows. Workflows can be shared accidentally, and node widget values may be saved in workflow JSON.
+
+## Troubleshooting
+
+### The second generation times out
+
+Some OpenAI-compatible proxies keep HTTP connections open incorrectly. The nodes send `Connection: close` by default to avoid reusing a stale connection.
+
+If it still times out:
+
+- Increase `timeout_seconds` to `900` or `1200`.
+- Reduce `n` to `1`.
+- Reduce the number or resolution of reference images.
+- Check whether your provider uses an async job API instead of returning `data[].b64_json` or `data[].url` directly.
+- If your provider has a custom polling endpoint, this node needs provider-specific async polling support.
 
 ## Development
 
