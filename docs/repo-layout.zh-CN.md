@@ -53,7 +53,6 @@ ComfyUI-Workflows-by-wennatre/
 ├── image/
 │   ├── openai-compatible/
 │   │   ├── text-to-image.json
-│   │   ├── reference-edit.json
 │   │   └── README.zh-CN.md
 │   └── flux/
 ├── video/
@@ -104,20 +103,18 @@ ComfyUI-Video-Tool-Name
 
 ```text
 OpenAI Compatible Image Generate
-OpenAI Compatible Image Edit With References
 ```
 
 自定义类型名尽量稳定，不要频繁改：
 
 ```text
-OPENAI_COMPATIBLE_IMAGE_REFERENCES
+OPENAI_COMPATIBLE_SOME_SHARED_TYPE
 ```
 
 workflow 文件名用小写加下划线：
 
 ```text
 openai_compatible_text_to_image_workflow.json
-openai_compatible_reference_images_workflow.json
 ```
 
 ## 5. 开源前检查清单
@@ -152,8 +149,7 @@ ComfyUI-OpenAI-Compatible-Image/
 ```text
 nodes/
 ├── generate.py
-├── edit.py
-└── references.py
+└── utils.py
 ```
 
 不要为了“看起来专业”过早拆文件。小节点保持简单更好维护。

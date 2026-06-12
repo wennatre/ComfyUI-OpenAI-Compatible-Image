@@ -2,18 +2,14 @@
 
 [中文说明](README.zh-CN.md)
 
-Lightweight ComfyUI custom nodes for OpenAI-compatible image generation and image editing endpoints.
+Lightweight ComfyUI custom node for OpenAI-compatible text-to-image endpoints.
 
-This project is an adapter for direct OpenAI-compatible APIs, self-hosted gateways, and third-party providers with small field differences. It keeps endpoint paths, multipart image field names, extra headers, and extra body fields editable from the node UI.
+This project is an adapter for direct OpenAI-compatible APIs, self-hosted gateways, and third-party providers with small field differences. It keeps endpoint paths, extra headers, and extra body fields editable from the node UI.
 
 ## Features
 
 - Text-to-image through an OpenAI-compatible JSON endpoint.
-- Image edit / image-to-image through an OpenAI-compatible multipart endpoint.
 - Configurable `api_base`, `endpoint_path`, model string, headers, and body fields.
-- Reference images via fixed slots or a chainable reference list.
-- Per-reference prompts appended into the main prompt.
-- Optional provider-specific per-reference prompt multipart field.
 - Reads `OPENAI_API_KEY` by default, with optional node-level key override.
 - Supports common image response fields such as `data[].b64_json`, `data[].url`, `image_url`, `output_url`, `result_url`, `images`, `outputs`, and `results`.
 - Returns the raw API response JSON as a second output for debugging.
@@ -23,10 +19,6 @@ This project is an adapter for direct OpenAI-compatible APIs, self-hosted gatewa
 | Node | Purpose |
 | --- | --- |
 | `OpenAI Compatible Image Generate` | Sends a text-to-image request to `/images/generations` by default. |
-| `OpenAI Compatible Image Edit With References` | Sends reference images to `/images/edits` by default. |
-| `OpenAI Compatible Reference Image` | Adds one image and one reference prompt to a chainable reference list. |
-
-Legacy node IDs from the initial GPT Image 2 prototype are still registered so older workflows can load.
 
 ## Installation
 
@@ -90,56 +82,13 @@ Use `extra_body_json` for provider body fields:
 {"user": "comfyui"}
 ```
 
-`timeout_seconds` defaults to `600`. Reference-image edits can be slow on proxy providers; if a request times out, increase this value before retrying.
-
-## Reference Images
-
-The edit node defaults to:
-
-```text
-POST {api_base}/images/edits
-Content-Type: multipart/form-data
-Authorization: Bearer {api_key}
-```
-
-Reference image input modes:
-
-- Fixed slots: connect `image_1 ... image_8`.
-- List mode: chain `OpenAI Compatible Reference Image` nodes and connect the final `references` output.
-
-`reference_image_count` controls how many references are sent. Set it to `0` to send all connected fixed-slot images or all list items.
-
-Each reference can have a prompt. By default, reference prompts are appended to the main prompt:
-
-```text
-Reference image 1: use this as the subject identity.
-Reference image 2: use this as the lighting and style.
-```
-
-Official OpenAI image edit requests do not define a separate per-image prompt field. If your custom endpoint supports one, set `reference_prompt_field`, for example:
-
-```text
-reference_prompt[]
-```
-
-The default multipart image field is:
-
-```text
-image[]
-```
-
-If your endpoint expects repeated `image` fields instead, set:
-
-```text
-image
-```
+`timeout_seconds` defaults to `600`. Proxy providers can be slow; if a request times out, increase this value before retrying.
 
 ## Workflows
 
 Example workflows are included:
 
 - `workflows/openai_compatible_text_to_image_workflow.json`
-- `workflows/openai_compatible_reference_images_workflow.json`
 
 Import them from ComfyUI after installing the node.
 
@@ -156,8 +105,7 @@ ComfyUI-OpenAI-Compatible-Image/
 ├── pyproject.toml
 ├── LICENSE
 ├── workflows/
-│   ├── openai_compatible_text_to_image_workflow.json
-│   └── openai_compatible_reference_images_workflow.json
+│   └── openai_compatible_text_to_image_workflow.json
 └── docs/
     └── repo-layout.zh-CN.md
 ```
@@ -198,7 +146,7 @@ Prefer `OPENAI_API_KEY` over pasting keys into workflows. Workflows can be share
 
 ## Troubleshooting
 
-### The second generation times out
+### A generation times out
 
 Some OpenAI-compatible proxies keep HTTP connections open incorrectly. The nodes send `Connection: close` by default to avoid reusing a stale connection.
 
@@ -206,7 +154,6 @@ If it still times out:
 
 - Increase `timeout_seconds` to `900` or `1200`.
 - Reduce `n` to `1`.
-- Reduce the number or resolution of reference images.
 - Check whether your provider uses an async job API instead of returning `data[].b64_json` or `data[].url` directly.
 - If your provider has a custom polling endpoint, this node needs provider-specific async polling support.
 - Connect or inspect the second output, `response_json`, to see the exact response shape.
@@ -219,7 +166,6 @@ Basic local checks:
 ```bash
 python -m py_compile __init__.py
 python -m json.tool workflows/openai_compatible_text_to_image_workflow.json
-python -m json.tool workflows/openai_compatible_reference_images_workflow.json
 ```
 
 ## License
