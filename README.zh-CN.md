@@ -33,7 +33,7 @@
 
 ```bash
 cd ComfyUI/custom_nodes
-git clone https://github.com/wenxl/ComfyUI-OpenAI-Compatible-Image.git
+git clone https://github.com/wennatre/ComfyUI-OpenAI-Compatible-Image.git
 ```
 
 在 ComfyUI 使用的 Python 环境里安装依赖：

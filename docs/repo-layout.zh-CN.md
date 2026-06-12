@@ -41,13 +41,13 @@ ComfyUI-Your-Node-Name/
 推荐仓库名：
 
 ```text
-ComfyUI-Workflows-by-wenxl
+ComfyUI-Workflows-by-wennatre
 ```
 
 推荐结构：
 
 ```text
-ComfyUI-Workflows-by-wenxl/
+ComfyUI-Workflows-by-wennatre/
 ├── README.md
 ├── README.zh-CN.md
 ├── image/

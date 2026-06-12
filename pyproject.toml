@@ -12,4 +12,4 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = "https://github.com/wenxl/ComfyUI-OpenAI-Compatible-Image"
+Repository = "https://github.com/wennatre/ComfyUI-OpenAI-Compatible-Image"

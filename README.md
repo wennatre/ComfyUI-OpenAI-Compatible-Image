@@ -33,7 +33,7 @@ Clone or copy this repository into your ComfyUI custom nodes directory:
 
 ```bash
 cd ComfyUI/custom_nodes
-git clone https://github.com/wenxl/ComfyUI-OpenAI-Compatible-Image.git
+git clone https://github.com/wennatre/ComfyUI-OpenAI-Compatible-Image.git
 ```
 
 Install dependencies in the same Python environment used by ComfyUI:
