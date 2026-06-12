@@ -25,6 +25,12 @@
             1
           ],
           "slot_index": 0
+        },
+        {
+          "name": "response_json",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 1
         }
       ],
       "properties": {
@@ -41,7 +47,8 @@
         "",
         "/images/generations",
         "{}",
-        "{}"
+        "{}",
+        false
       ]
     },
     {

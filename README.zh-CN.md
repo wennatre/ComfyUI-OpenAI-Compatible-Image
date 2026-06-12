@@ -15,7 +15,8 @@
 - 每张参考图可以单独写提示词，并默认合并进主 prompt。
 - 如果你的自定义端点支持每图提示词字段，可以配置额外 multipart 字段。
 - 默认读取 `OPENAI_API_KEY`，也支持在节点中临时填写 key。
-- 支持读取 `data[].b64_json` 或 `data[].url` 图片响应。
+- 支持常见图片响应字段，例如 `data[].b64_json`、`data[].url`、`image_url`、`output_url`、`result_url`、`images`、`outputs`、`results`。
+- 第二个输出会返回原始 API 响应 JSON，方便排查。
 
 ## 节点
 
@@ -166,6 +167,10 @@ image
 }
 ```
 
+很多代理 API 会使用略有不同的字段名。节点也会检查常见 URL 字段，例如 `image_url`、`output_url`、`result_url`、`download_url`，以及顶层 `images`、`outputs`、`results` 数组。
+
+打开 `save_raw_response` 后，节点会把原始响应 JSON 写到系统临时目录，并在 ComfyUI 控制台打印路径。
+
 ## 目录结构
 
 当前仓库结构：
@@ -205,6 +210,8 @@ docs/repo-layout.zh-CN.md
 - 减少参考图数量或参考图分辨率。
 - 确认服务商是不是异步任务接口，而不是直接返回 `data[].b64_json` 或 `data[].url`。
 - 如果服务商需要自定义轮询接口，这个节点需要额外适配 provider-specific async polling。
+- 连接或查看第二个输出 `response_json`，确认 API 实际返回结构。
+- 打开 `save_raw_response`，然后在 ComfyUI 控制台查看打印出的 JSON 路径。
 
 ## 开发校验
 

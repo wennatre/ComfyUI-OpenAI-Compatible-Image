@@ -15,7 +15,8 @@ This project is an adapter for direct OpenAI-compatible APIs, self-hosted gatewa
 - Per-reference prompts appended into the main prompt.
 - Optional provider-specific per-reference prompt multipart field.
 - Reads `OPENAI_API_KEY` by default, with optional node-level key override.
-- Supports image responses as `data[].b64_json` or `data[].url`.
+- Supports common image response fields such as `data[].b64_json`, `data[].url`, `image_url`, `output_url`, `result_url`, `images`, `outputs`, and `results`.
+- Returns the raw API response JSON as a second output for debugging.
 
 ## Nodes
 
@@ -187,6 +188,10 @@ It also accepts URL responses:
 }
 ```
 
+Many proxy APIs use slightly different field names. The node also checks common URL keys such as `image_url`, `output_url`, `result_url`, and `download_url`, plus top-level `images`, `outputs`, and `results` arrays.
+
+Enable `save_raw_response` to write the raw response JSON to your system temp directory. The path is printed in the ComfyUI console.
+
 ## Security
 
 Prefer `OPENAI_API_KEY` over pasting keys into workflows. Workflows can be shared accidentally, and node widget values may be saved in workflow JSON.
@@ -204,6 +209,8 @@ If it still times out:
 - Reduce the number or resolution of reference images.
 - Check whether your provider uses an async job API instead of returning `data[].b64_json` or `data[].url` directly.
 - If your provider has a custom polling endpoint, this node needs provider-specific async polling support.
+- Connect or inspect the second output, `response_json`, to see the exact response shape.
+- Enable `save_raw_response` and check the printed JSON path in the ComfyUI console.
 
 ## Development
 
